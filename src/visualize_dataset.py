@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torchvision import datasets, transforms
 import torchvision
-
+import time
 
 def get_mean_std_train_data(data_root):
     
@@ -81,21 +81,33 @@ else:
 
 
 train_loader, test_loader, mean, std = get_data(batch_size=16, data_root="./")
-
 print(len(train_loader))
-#print(mean, std)
-
-# Display image and label.
+#show single image
+"""
 train_features, train_labels = next(iter(train_loader))
-print(type(train_features), type(train_labels))
-print(f"Feature batch shape: {train_features.size()}")
-print(f"Labels batch shape: {train_labels.size()}")
-#img = train_features[0].squeeze()
-#label = train_labels[0]
-img = torchvision.utils.make_grid(train_features)
+img = train_features[0].squeeze()
+label = train_labels[0]
 img = img.numpy()
 plt.imshow(np.transpose(img, (1, 2, 0)))
-#plt.imshow(img[0], cmap="gray")
 print(train_labels)
 plt.show()
+"""
 
+x = 0
+plt.ion()
+fig = plt.figure()
+# Display images and labels.
+for train_features, train_labels in train_loader:
+	print(type(train_features), type(train_labels))
+	print(f"Feature batch shape: {train_features.size()}")
+	print(f"Labels batch shape: {train_labels.size()}")
+	img = torchvision.utils.make_grid(train_features)
+	img = img.numpy()
+	plt.imshow(np.transpose(img, (1, 2, 0)))
+	print(train_labels)
+	fig.canvas.draw_idle()
+	time.sleep(1.5)
+	fig.canvas.flush_events()
+	x += 1
+	if x == 6:
+		break;
