@@ -9,8 +9,10 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 import torchvision
+#import matplotlib
+#matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
-os.environ['CUDA_VISIBLE_DEVICES'] ='0'
+import multiprocessing
 
 class MyModel(nn.Module):
 	def __init__(self):
@@ -79,7 +81,13 @@ def showWeights(rows):
 			mat = mat.numpy()
 			plt.imshow(mat, cmap="gray")
 	plt.show()
-	return 0
+
+def showImage(img):
+	img = img[0].squeeze()
+	img = img.numpy()
+	plt.imshow(np.transpose(img, (1, 2, 0)))
+	plt.show()
+
 ############ MAIN ############
 if torch.cuda.is_available():
 	device = "cuda:0"
@@ -100,9 +108,11 @@ train_loader, test_loader = get_data(batch_size=1, data_root="./")
 
 
 train_features, train_labels = next(iter(train_loader))
-print(type(train_features), type(train_labels))
-print(f"Feature batch shape: {train_features.size()}")
-print(f"Labels batch shape: {train_labels.size()}")
+#print(type(train_features), type(train_labels))
+#print(f"Feature batch shape: {train_features.size()}")
+#print(f"Labels batch shape: {train_labels.size()}")
+job_for_another_core = multiprocessing.Process(target=showImage, args=(train_features,))
+job_for_another_core.start()
 
 
 # forward pass to the model
@@ -128,4 +138,9 @@ for layer in layers:
 	rows.append(columns)
 	columns = []
 
-showWeights(rows)
+
+job_for_another_core = multiprocessing.Process(target=showWeights, args=(rows,))
+job_for_another_core.start()
+
+
+
