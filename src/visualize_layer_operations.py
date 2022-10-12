@@ -40,8 +40,6 @@ class MyModel(nn.Module):
 		self.x9 = F.linear(torch.Tensor([16*5*5, 1]), torch.Tensor([120, 400]))
 		#self.x9 = F.linear(torch.Tensor([self.x8.shape[1], 1]), torch.Tensor([120, self.x8.shape[1]]))
 		self.x10 = F.relu_(self.x9)
-		#print(self.x10)
-		#print("x10", self.x10.shape)
 		#self.x11 = F.linear(torch.Tensor([self.x10.shape[1], 1]), torch.Tensor([84, self.x10.shape[1]]))
 		self.x11 = F.linear(torch.Tensor([120, 1]), torch.Tensor([84, 120]))
 		self.x12 = F.relu_(self.x11)
@@ -68,7 +66,20 @@ def get_data(batch_size, data_root, num_workers=1):
     )
     return train_loader, test_loader
 
-
+def showWeights(rows):
+	plt.figure(figsize=(20, 10))
+	x=0
+	for row in range(len(rows)):
+		for column in range(len(rows[row])):
+			x+=1
+			if x == 7 or x == 23 or x == 39:
+				x+=10
+			plt.subplot(len(rows)+1, 16, x)
+			mat = rows[row][column]
+			mat = mat.numpy()
+			plt.imshow(mat, cmap="gray")
+	plt.show()
+	return 0
 ############ MAIN ############
 if torch.cuda.is_available():
 	device = "cuda:0"
@@ -87,6 +98,7 @@ model.to(device)
 train_loader, test_loader = get_data(batch_size=1, data_root="./")
 
 
+
 train_features, train_labels = next(iter(train_loader))
 print(type(train_features), type(train_labels))
 print(f"Feature batch shape: {train_features.size()}")
@@ -95,6 +107,25 @@ print(f"Labels batch shape: {train_labels.size()}")
 
 # forward pass to the model
 output = model(train_features)
-print(output.shape)
+#print(output.shape)
 print(model.x1.shape)
-print(output)
+"""
+print(model.x2.shape)
+print(model.x4.shape)
+print(model.x5.shape)
+print(model.x6.shape)
+print(model.x7.shape)
+"""
+
+
+
+layers = [model.x1, model.x2, model.x4, model.x5, model.x6, model.x7]
+columns = []
+rows = []
+for layer in layers:
+	for channel in range(layer.shape[1]):
+		columns.append(layer[0][channel])
+	rows.append(columns)
+	columns = []
+
+showWeights(rows)
