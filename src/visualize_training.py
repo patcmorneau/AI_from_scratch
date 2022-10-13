@@ -70,76 +70,93 @@ def showWeights(rows):
 				x+=10
 			plt.subplot(len(rows)+1, 16, x)
 			mat = rows[row][column]
-			mat = mat.numpy()
+			mat = mat.detach().numpy()
 			plt.imshow(mat, cmap="gray")
 	plt.show()
+	#fig.canvas.draw_idle()
+	#fig.canvas.flush_events()
 
 def showImage(img):
 	img = img[0].squeeze()
 	img = img.numpy()
 	plt.imshow(np.transpose(img, (1, 2, 0)))
 	plt.show()
+	#fig.canvas.draw_idle()
+	#fig.canvas.flush_events()
 
 
 def train(device: str, model: nn.Module, optimizer: torch.optim.Optimizer, train_loader: torch.utils.data.DataLoader, epoch_idx: int):
 	# change model in training mode
-    model.train()
-    
-    # to get batch loss
-    batch_loss = np.array([])
-    
-    # to get batch accuracy
-    batch_acc = np.array([])
-        
-    for batch_idx, (data, target) in enumerate(train_loader):
-        
-        # clone target
-        indx_target = target.clone()
-        # send data to device (its is medatory if GPU has to be used)
-        data = data.to(device)
-        # send target to device
-        target = target.to(device)
+	model.train()
+	# to get batch loss
+	batch_loss = np.array([])
+	# to get batch accuracy
+	batch_acc = np.array([])
+	
+	for batch_idx, (data, target) in enumerate(train_loader):
+		# clone target
+		indx_target = target.clone()
+		# send data to device (its is medatory if GPU has to be used)
+		img = data
+		data = data.to(device)
+		# send target to device
+		target = target.to(device)
 
-        # reset parameters gradient to zero
-        optimizer.zero_grad()
-        
-        # forward pass to the model
-        output = model(data)      
-        
-        # cross entropy loss
-        loss = F.cross_entropy(output, target)
-        
-        # find gradients w.r.t training parameters
-        loss.backward()
-        # Update parameters using gardients
-        optimizer.step()
-        
-        batch_loss = np.append(batch_loss, [loss.item()])
-        
-        # Score to probability using softmax
-        prob = F.softmax(output, dim=1)
-            
-        # get the index of the max probability
-        pred = prob.data.max(dim=1)[1]  
-                        
-        # correct prediction
-        correct = pred.cpu().eq(indx_target).sum()
-            
-        # accuracy
-        acc = float(correct) / float(len(data))
-        
-        batch_acc = np.append(batch_acc, [acc])
+		# reset parameters gradient to zero
+		optimizer.zero_grad()
 
-        if batch_idx % 10000 == 0 and batch_idx > 0:              
-            print(
-                'Train Epoch: {} [{}/{}] Loss: {:.6f} Acc: {:.4f}'.format(
-                    epoch_idx, batch_idx * len(data), len(train_loader.dataset), loss.item(), acc
-                )
-            )
-            
-    epoch_loss = batch_loss.mean()
-    epoch_acc = batch_acc.mean()
-    return epoch_loss, epoch_acc
+		# forward pass to the model
+		output = model(data)      
+
+		if batch_idx == 0:
+			
+			job_for_another_core = multiprocessing.Process(target=showImage, args=(img,))
+			job_for_another_core.start()
+
+			layers = [model.x1.cpu(), model.x2.cpu(), model.x3.cpu(), model.x4.cpu(), model.x5.cpu(), model.x6.cpu()]
+			columns = []
+			rows = []
+			for layer in layers:
+				for channel in range(layer.shape[1]):
+					columns.append(layer[0][channel])
+					rows.append(columns)
+				columns = []
+
+
+			job_for_another_core = multiprocessing.Process(target=showWeights, args=(rows,))
+			job_for_another_core.start()
+
+
+		# cross entropy loss
+		loss = F.cross_entropy(output, target)
+
+		# find gradients w.r.t training parameters
+		loss.backward()
+		# Update parameters using gardients
+		optimizer.step()
+
+		batch_loss = np.append(batch_loss, [loss.item()])
+
+		# Score to probability using softmax
+		prob = F.softmax(output, dim=1)
+
+		# get the index of the max probability
+		pred = prob.data.max(dim=1)[1]  
+
+		# correct prediction
+		correct = pred.cpu().eq(indx_target).sum()
+
+		# accuracy
+		acc = float(correct) / float(len(data))
+
+		batch_acc = np.append(batch_acc, [acc])
+
+		if batch_idx % 10000 == 0 and batch_idx > 0:              
+			print('Train Epoch: {} [{}/{}] Loss: {:.6f} Acc: {:.4f}'.format(epoch_idx, batch_idx * len(data), len(train_loader.dataset), loss.item(), acc))
+
+	epoch_loss = batch_loss.mean()
+	epoch_acc = batch_acc.mean()
+	return epoch_loss, epoch_acc
 
 
 def validate(device, model: nn.Module, test_loader: torch.utils.data.DataLoader) -> float:
@@ -181,6 +198,7 @@ def validate(device, model: nn.Module, test_loader: torch.utils.data.DataLoader)
 
 
 ############ MAIN ############
+
 if torch.cuda.is_available():
 	device = "cuda"
 	print("CUDA !")
@@ -190,10 +208,13 @@ else:
 	print("CPU !")
 
 
+device = 'cpu'
+
 # init model
 model = MyModel()
 model.to(device)
-
+#plt.ion()
+#fig = plt.figure()
 
 # optimizer
 optimizer = optim.SGD(model.parameters(),lr=0.05)
