@@ -1,5 +1,4 @@
 import os
-import time
 from typing import Iterable
 from dataclasses import dataclass
 import numpy as np
@@ -9,18 +8,12 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 import torchvision
-#import matplotlib
-#matplotlib.use("qt4agg")
 import matplotlib.pyplot as plt
 import multiprocessing
 
 class MyModel(nn.Module):
 	def __init__(self):
 		super().__init__()
-		
-		#self.linear1 = nn.Linear(16 * 5 * 5, 120)
-		#self.l8 = F.linear(torch.zeros([120]), torch.zeros([84, 120]))
-		#self.l9 = F.linear(torch.zeros([84]), torch.zeros([10, 84]))
 	
 	def forward(self, x):
 		print(x.shape)
@@ -108,24 +101,15 @@ train_loader, test_loader = get_data(batch_size=1, data_root="./")
 
 
 train_features, train_labels = next(iter(train_loader))
-#print(type(train_features), type(train_labels))
-#print(f"Feature batch shape: {train_features.size()}")
-#print(f"Labels batch shape: {train_labels.size()}")
 job_for_another_core = multiprocessing.Process(target=showImage, args=(train_features,))
 job_for_another_core.start()
 
 
 # forward pass to the model
 output = model(train_features)
-#print(output.shape)
+
 print(model.x1.shape)
-"""
-print(model.x2.shape)
-print(model.x4.shape)
-print(model.x5.shape)
-print(model.x6.shape)
-print(model.x7.shape)
-"""
+
 
 
 

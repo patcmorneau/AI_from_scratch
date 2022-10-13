@@ -5,51 +5,10 @@ from torchvision import datasets, transforms
 import torchvision
 import time
 
-def get_mean_std_train_data(data_root):
-    
-    train_transform = transforms.Compose([transforms.ToTensor()])
-    train_set = datasets.CIFAR10(root=data_root, train=True, download=False, transform=train_transform)
-    
-    ### BEGIN SOLUTION
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
-        batch_size=len(train_set),
-        num_workers=1
-    )
-    channels_sum, channels_squared_sum, num_batches = 0, 0, 0
-    for data, _ in train_loader:
-        # Mean over batch, height and width, but not over the channels
-        channels_sum += torch.mean(data, dim=[0,2,3])
-        channels_squared_sum += torch.mean(data**2, dim=[0,2,3])
-        num_batches += 1
-
-    mean = channels_sum / num_batches
-
-    # std = sqrt(E[X^2] - (E[X])^2)
-    std = (channels_squared_sum / num_batches - mean ** 2) ** 0.5
-
-    ### END SOLUTION
-    
-    return mean, std
-
 
 def get_data(batch_size, data_root, num_workers=1):
-    
-    
-    try:
-        mean, std = get_mean_std_train_data(data_root)
-        assert len(mean) == len(std) == 3
-    except:
-        mean = np.array([0.5, 0.5, 0.5])
-        std = np.array([0.5, 0.5, 0.5])
-        
-    
-    train_test_transforms = transforms.Compose([
-        # this re-scale image tensor values between 0-1. image_tensor /= 255
-        transforms.ToTensor(),
-        # subtract mean and divide by variance.
-        #transforms.Normalize(mean, std)
-    ])
+
+    train_test_transforms = transforms.Compose([transforms.ToTensor()])
     
     # train dataloader
     train_loader = torch.utils.data.DataLoader(
@@ -66,7 +25,7 @@ def get_data(batch_size, data_root, num_workers=1):
         shuffle=False,
         num_workers=num_workers
     )
-    return train_loader, test_loader, mean, std
+    return train_loader, test_loader
 
 
 #_________________________________________________
@@ -80,7 +39,7 @@ else:
 	print("CPU !")
 
 
-train_loader, test_loader, mean, std = get_data(batch_size=16, data_root="./")
+train_loader, test_loader = get_data(batch_size=16, data_root="./")
 print(len(train_loader))
 #show single image
 """
